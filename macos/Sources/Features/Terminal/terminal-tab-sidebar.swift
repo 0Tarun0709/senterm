@@ -79,6 +79,7 @@ struct TerminalTabSidebarView: View {
     let toggleSidebar: () -> Void
     let closeTab: (TerminalTabSidebar.Tab) -> Void
     let openGitChanges: () -> Void
+    @State private var hoveredTab: TerminalTabSidebar.Tab.ID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -142,28 +143,47 @@ struct TerminalTabSidebarView: View {
             .foregroundStyle(.secondary)
             .font(.system(size: 12, weight: .medium))
             if !collapsed {
-                ForEach(section.tabs) { tab in
-                    Button {
-                        sidebar.select(tab)
-                    } label: {
-                        HStack(spacing: 7) {
-                            Image(systemName: "terminal")
-                            Text(verbatim: tab.title).lineLimit(1)
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 8)
-                        .frame(height: 28)
-                        .contentShape(Rectangle())
-                        .background {
-                            if tab.selected { Capsule().fill(Color.accentColor.opacity(0.22)) }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help(tab.title)
-                    .accessibilityAddTraits(tab.selected ? .isSelected : [])
-                    .contextMenu { Button("close tab") { closeTab(tab) } }
-                }
+                ForEach(section.tabs, content: tabRow)
             }
         }
+    }
+
+    private func tabRow(_ tab: TerminalTabSidebar.Tab) -> some View {
+        HStack(spacing: 0) {
+            Button {
+                sidebar.select(tab)
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "terminal")
+                    Text(verbatim: tab.title).lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .frame(height: 28)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(tab.title)
+            .accessibilityAddTraits(tab.selected ? .isSelected : [])
+
+            if hoveredTab == tab.id {
+                action("xmark", "close terminal: \(tab.title)") { closeTab(tab) }
+            } else {
+                Color.clear.frame(width: 24, height: 24)
+            }
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 4)
+        .contentShape(Rectangle())
+        .background {
+            if tab.selected { Capsule().fill(Color.accentColor.opacity(0.22)) }
+        }
+        .onHover { isInside in
+            if isInside {
+                hoveredTab = tab.id
+            } else if hoveredTab == tab.id {
+                hoveredTab = nil
+            }
+        }
+        .contextMenu { Button("close tab") { closeTab(tab) } }
     }
 }
