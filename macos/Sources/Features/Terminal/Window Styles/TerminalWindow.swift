@@ -254,12 +254,13 @@ class TerminalWindow: NSWindow {
 
     var usesTabSidebar: Bool { !(self is HiddenTitlebarTerminalWindow) }
 
-    private weak var sidebarToggleView: NSView?
-
-    func installSidebarToggle(collapsed: Bool, action: @escaping () -> Void) {
-        let host = NonDraggableHostingView(rootView: Button(action: action) {
-            Image(systemName: "sidebar.left").frame(width: 28, height: 24).contentShape(Rectangle())
-        }.buttonStyle(.plain))
+    func installSidebarActions(
+        sidebar: TerminalTabSidebar,
+        toggleSidebar: @escaping () -> Void,
+        newSection: @escaping () -> Void
+    ) {
+        let actions = SidebarTitlebarActions(sidebar: sidebar, toggleSidebar: toggleSidebar, newSection: newSection)
+        let host = NonDraggableHostingView(rootView: actions)
 
         if styleMask.contains(.titled) {
             titleVisibility = .hidden
@@ -268,7 +269,7 @@ class TerminalWindow: NSWindow {
             let accessory = NSTitlebarAccessoryViewController()
             accessory.layoutAttribute = .left
             accessory.view = host
-            host.frame.size = NSSize(width: 28, height: 24)
+            host.frame.size = host.fittingSize
             addTitlebarAccessoryViewController(accessory)
         } else if let contentView {
             contentView.addSubview(host)
@@ -278,14 +279,29 @@ class TerminalWindow: NSWindow {
                 host.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
             ])
         }
-        sidebarToggleView = host
-        updateSidebarToggle(collapsed: collapsed)
     }
 
-    func updateSidebarToggle(collapsed: Bool) {
-        let title = collapsed ? "show sidebar" : "hide sidebar"
-        sidebarToggleView?.toolTip = title
-        sidebarToggleView?.setAccessibilityLabel(title)
+    private struct SidebarTitlebarActions: View {
+        @ObservedObject var sidebar: TerminalTabSidebar
+        let toggleSidebar: () -> Void
+        let newSection: () -> Void
+
+        var body: some View {
+            HStack(spacing: 2) {
+                button("sidebar.left", sidebar.isCollapsed ? "show sidebar" : "hide sidebar", toggleSidebar)
+                button("folder.badge.plus", "new project section", newSection)
+            }
+            .fixedSize()
+        }
+
+        private func button(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
+            Button(action: action) {
+                Image(systemName: icon).frame(width: 28, height: 24).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(title)
+            .accessibilityLabel(title)
+        }
     }
 
     override func addTitlebarAccessoryViewController(_ childViewController: NSTitlebarAccessoryViewController) {

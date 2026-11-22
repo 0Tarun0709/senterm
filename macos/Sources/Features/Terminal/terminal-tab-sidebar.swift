@@ -74,7 +74,6 @@ final class TerminalTabSidebar: ObservableObject {
 struct TerminalTabSidebarView: View {
     @ObservedObject var sidebar: TerminalTabSidebar
     let newTab: (String?) -> Void
-    let newSection: () -> Void
     let toggleSection: (String?) -> Void
     let closeTab: (TerminalTabSidebar.Tab) -> Void
     let openGitChanges: () -> Void
@@ -82,10 +81,6 @@ struct TerminalTabSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Spacer()
-                action("folder.badge.plus", "new project section", newSection)
-            }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
                     ForEach(sidebar.sections) { section in
