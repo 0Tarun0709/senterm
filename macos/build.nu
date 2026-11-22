@@ -19,9 +19,17 @@ def main [
         []
     }
 
+    # Keep an explicit Xcode selection without inheriting other toolchain flags.
+    let developer_dir = if "DEVELOPER_DIR" in $env {
+        [$"DEVELOPER_DIR=($env.DEVELOPER_DIR)"]
+    } else {
+        []
+    }
+
     (^env -i
         $"HOME=($env.HOME)"
         "PATH=/usr/bin:/bin:/usr/sbin:/sbin"
+        ...$developer_dir
         xcodebuild
         -project $project
         -scheme $scheme
