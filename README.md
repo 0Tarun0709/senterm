@@ -22,6 +22,9 @@ window for every repo.
 SenTerm keeps Ghostty’s native terminal, Metal renderer, and split panes. It
 adds project organization and Git review without trying to replace your editor.
 
+[Visit the SenTerm website](https://0tarun0709.github.io/senterm-legacy/) for
+screenshots and a preview download link.
+
 ## Getting started
 
 1. Open the [macOS build workflow](https://github.com/0Tarun0709/senterm/actions/workflows/senterm-dmg.yml)
