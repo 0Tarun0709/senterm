@@ -7,6 +7,7 @@
 <p align="center">a project-first macos terminal built on ghostty.</p>
 
 <p align="center">
+  <a href="#why-i-built-this">why i built this</a> ·
   <a href="#try-the-preview">try the preview</a> ·
   <a href="#build-from-source">build from source</a> ·
   <a href="docs/senterm-roadmap.md">roadmap</a>
@@ -15,6 +16,23 @@
 keep your dev servers, coding agents, and shells in one window instead of
 opening a separate window for every repo. senterm adds a folder-based sidebar
 and a git changes viewer to ghostty's native macos terminal.
+
+## why i built this
+
+[ghostty](https://ghostty.org/) is where i run my dev servers and coding agents,
+and [vs code](https://code.visualstudio.com/) is still my default editor. since
+agents started writing more of my day-to-day code, though, i mostly open vs code
+to review their changes. its side-by-side git diff is still my favorite.
+
+when i had six services running and changes to review across six repos, i’d end
+up with six vs code windows open just for diffs. that added cpu load and gave
+me more windows to switch between while my servers and agents were still running.
+
+i built senterm to keep that workflow in one app: switch between repos in the
+sidebar, open a vs code-style diff for the current repo, and keep working with
+my agent alongside the review. i built it for myself first, but i’m open to
+ideas and contributions that make it easier for other developers to adapt it
+to their own workflows.
 
 ## what's inside
 
