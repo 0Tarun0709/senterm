@@ -254,6 +254,40 @@ class TerminalWindow: NSWindow {
 
     var usesTabSidebar: Bool { !(self is HiddenTitlebarTerminalWindow) }
 
+    private weak var sidebarToggleView: NSView?
+
+    func installSidebarToggle(collapsed: Bool, action: @escaping () -> Void) {
+        let host = NonDraggableHostingView(rootView: Button(action: action) {
+            Image(systemName: "sidebar.left").frame(width: 28, height: 24).contentShape(Rectangle())
+        }.buttonStyle(.plain))
+
+        if styleMask.contains(.titled) {
+            titleVisibility = .hidden
+            titlebarAppearsTransparent = true
+            titlebarSeparatorStyle = .none
+            let accessory = NSTitlebarAccessoryViewController()
+            accessory.layoutAttribute = .left
+            accessory.view = host
+            host.frame.size = NSSize(width: 28, height: 24)
+            addTitlebarAccessoryViewController(accessory)
+        } else if let contentView {
+            contentView.addSubview(host)
+            host.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                host.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+                host.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+            ])
+        }
+        sidebarToggleView = host
+        updateSidebarToggle(collapsed: collapsed)
+    }
+
+    func updateSidebarToggle(collapsed: Bool) {
+        let title = collapsed ? "show sidebar" : "hide sidebar"
+        sidebarToggleView?.toolTip = title
+        sidebarToggleView?.setAccessibilityLabel(title)
+    }
+
     override func addTitlebarAccessoryViewController(_ childViewController: NSTitlebarAccessoryViewController) {
         super.addTitlebarAccessoryViewController(childViewController)
 

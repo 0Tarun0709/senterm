@@ -76,7 +76,6 @@ struct TerminalTabSidebarView: View {
     let newTab: (String?) -> Void
     let newSection: () -> Void
     let toggleSection: (String?) -> Void
-    let toggleSidebar: () -> Void
     let closeTab: (TerminalTabSidebar.Tab) -> Void
     let openGitChanges: () -> Void
     @State private var hoveredTab: TerminalTabSidebar.Tab.ID?
@@ -84,20 +83,13 @@ struct TerminalTabSidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                action("sidebar.left", sidebar.isCollapsed ? "show sidebar" : "hide sidebar", toggleSidebar)
-                if !sidebar.isCollapsed {
-                    Spacer()
-                    action("folder.badge.plus", "new project section", newSection)
-                }
-            }
-            if sidebar.isCollapsed {
                 Spacer()
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        ForEach(sidebar.sections) { section in
-                            sectionView(section)
-                        }
+                action("folder.badge.plus", "new project section", newSection)
+            }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(sidebar.sections) { section in
+                        sectionView(section)
                     }
                 }
             }

@@ -614,6 +614,9 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         for controller in workspaceControllers {
             controller.tabSidebar.isCollapsed = collapsed
             controller.terminalViewContainer?.setSidebarCollapsed(collapsed)
+            if let window = controller.window as? TerminalWindow {
+                window.updateSidebarToggle(collapsed: collapsed)
+            }
         }
     }
 
@@ -1209,7 +1212,6 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
                     guard let self else { return }
                     setSectionCollapsed(directory, collapsed: !tabSidebar.collapsedSections.contains(directory))
                 },
-                toggleSidebar: { [weak self] in self?.toggleTabSidebar() },
                 closeTab: { [weak self] tab in
                     guard let target = self?.tabSidebar.windows.first(where: { ObjectIdentifier($0) == tab.id }),
                           let controller = target.windowController as? TerminalController else { return }
@@ -1221,6 +1223,11 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
             container.setSidebarCollapsed(tabSidebar.isCollapsed)
         }
         window.contentView = container
+        if let terminalWindow = window as? TerminalWindow, terminalWindow.usesTabSidebar {
+            terminalWindow.installSidebarToggle(collapsed: tabSidebar.isCollapsed) { [weak self] in
+                self?.toggleTabSidebar()
+            }
+        }
 
         // If we have a default size, we want to apply it.
         if let defaultSize {

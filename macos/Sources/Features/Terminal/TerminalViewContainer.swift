@@ -6,6 +6,7 @@ import SwiftUI
 class TerminalViewContainer: NSView {
     private let terminalView: NSView
     private lazy var terminalLeading = terminalView.leadingAnchor.constraint(equalTo: leadingAnchor)
+    private weak var sidebarView: NSView?
     private var sidebarWidthConstraint: NSLayoutConstraint?
     private var sidebarWidth: CGFloat { sidebarWidthConstraint?.constant ?? 0 }
 
@@ -74,6 +75,7 @@ class TerminalViewContainer: NSView {
         addSubview(sidebar)
         sidebar.translatesAutoresizingMaskIntoConstraints = false
         terminalLeading.isActive = false
+        sidebarView = sidebar
         let width = sidebar.widthAnchor.constraint(equalToConstant: 216)
         sidebarWidthConstraint = width
         invalidateIntrinsicContentSize()
@@ -87,7 +89,8 @@ class TerminalViewContainer: NSView {
     }
 
     func setSidebarCollapsed(_ collapsed: Bool) {
-        sidebarWidthConstraint?.constant = collapsed ? 40 : 216
+        sidebarView?.isHidden = collapsed
+        sidebarWidthConstraint?.constant = collapsed ? 0 : 216
         invalidateIntrinsicContentSize()
     }
 
