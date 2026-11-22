@@ -1203,6 +1203,7 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
             tabSidebar.refresh()
             container.installTabSidebar(TerminalTabSidebarView(
                 sidebar: tabSidebar,
+                ghostty: ghostty,
                 newTab: { [weak self] in self?.addSidebarTerminal(in: $0) },
                 toggleSection: { [weak self] directory in
                     guard let self else { return }

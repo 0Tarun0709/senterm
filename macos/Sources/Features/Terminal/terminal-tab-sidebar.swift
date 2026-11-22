@@ -73,6 +73,10 @@ final class TerminalTabSidebar: ObservableObject {
 
 struct TerminalTabSidebarView: View {
     @ObservedObject var sidebar: TerminalTabSidebar
+    @ObservedObject var ghostty: Ghostty.App
+
+    private var background: NSColor { NSColor(ghostty.config.backgroundColor) }
+    private var light: Bool { background.isLightColor }
     let newTab: (String?) -> Void
     let toggleSection: (String?) -> Void
     let closeTab: (TerminalTabSidebar.Tab) -> Void
@@ -93,12 +97,16 @@ struct TerminalTabSidebarView: View {
         .padding(8)
         .font(.system(size: 13))
         .frame(maxHeight: .infinity, alignment: .top)
-        .foregroundStyle(Color(red: 185 / 255, green: 189 / 255, blue: 201 / 255))
-        .background(Color(red: 23 / 255, green: 25 / 255, blue: 30 / 255))
-        .environment(\.colorScheme, .dark)
+        .foregroundStyle(ghostty.config.foregroundColor)
+        .background(Color(nsColor: tint(0.05)))
+        .environment(\.colorScheme, light ? .light : .dark)
         .overlay(alignment: .trailing) {
             Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 1).allowsHitTesting(false)
         }
+    }
+
+    private func tint(_ fraction: CGFloat) -> NSColor {
+        background.blended(withFraction: fraction, of: NSColor(ghostty.config.foregroundColor)) ?? background
     }
 
     private func action(_ icon: String, _ title: String, _ handler: @escaping () -> Void) -> some View {
@@ -164,7 +172,7 @@ struct TerminalTabSidebarView: View {
         .contentShape(Rectangle())
         .background {
             if tab.selected {
-                Capsule().fill(Color(red: 58 / 255, green: 62 / 255, blue: 71 / 255))
+                Capsule().fill(Color(nsColor: tint(0.19)))
             }
         }
         .onHover { isInside in

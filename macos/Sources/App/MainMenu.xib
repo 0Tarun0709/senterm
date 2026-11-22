@@ -93,6 +93,12 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="GOd-qX-exa"/>
+                            <menuItem title="themes…" id="the-me-pkr">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="openThemes:" target="bbz-4X-AYv" id="the-me-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem title="Reload Configuration" id="KKH-XX-5py">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>

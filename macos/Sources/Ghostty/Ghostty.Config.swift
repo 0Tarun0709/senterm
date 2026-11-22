@@ -84,6 +84,12 @@ extension Ghostty {
 
             ghostty_config_load_recursive_files(cfg)
 
+            // A theme explicitly chosen in the picker takes priority over file and CLI themes.
+            if let override = ThemeSelection.overrideFile,
+               FileManager.default.fileExists(atPath: override.path) {
+                ghostty_config_load_file(cfg, override.path)
+            }
+
             // TODO: we'd probably do some config loading here... for now we'd
             // have to do this synchronously. When we support config updating we can do
             // this async and update later.
@@ -465,18 +471,15 @@ extension Ghostty {
             return v
         }
 
-        var backgroundColor: Color {
-            var color: ghostty_config_color_s = .init()
-            let bg_key = "background"
-            if !ghostty_config_get(config, &color, bg_key, UInt(bg_key.lengthOfBytes(using: .utf8))) {
-                return Color(NSColor.windowBackgroundColor)
-            }
+        var backgroundColor: Color { color("background", fallback: .windowBackgroundColor) }
+        var foregroundColor: Color { color("foreground", fallback: .labelColor) }
 
-            return .init(
-                red: Double(color.r) / 255,
-                green: Double(color.g) / 255,
-                blue: Double(color.b) / 255
-            )
+        private func color(_ key: String, fallback: NSColor) -> Color {
+            var color: ghostty_config_color_s = .init()
+            guard let config, ghostty_config_get(config, &color, key, UInt(key.utf8.count)) else {
+                return Color(nsColor: fallback)
+            }
+            return Color(nsColor: NSColor(ghostty: color))
         }
 
         var backgroundOpacity: Double {

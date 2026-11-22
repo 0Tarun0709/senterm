@@ -996,6 +996,10 @@ class AppDelegate: NSObject,
         ghostty.openConfig()
     }
 
+    @IBAction func openThemes(_ sender: Any?) {
+        ThemePickerWindow.open(ghostty)
+    }
+
     @IBAction func reloadConfig(_ sender: Any?) {
         ghostty.reloadConfig()
     }
