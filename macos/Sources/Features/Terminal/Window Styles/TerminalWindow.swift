@@ -252,6 +252,8 @@ class TerminalWindow: NSWindow {
         }
     }
 
+    var usesTabSidebar: Bool { !(self is HiddenTitlebarTerminalWindow) }
+
     override func addTitlebarAccessoryViewController(_ childViewController: NSTitlebarAccessoryViewController) {
         super.addTitlebarAccessoryViewController(childViewController)
 
@@ -260,6 +262,10 @@ class TerminalWindow: NSWindow {
         // it. This has been verified to work on macOS 12 to 26
         if isTabBar(childViewController) {
             childViewController.identifier = Self.tabBarIdentifier
+            if usesTabSidebar {
+                childViewController.isHidden = true
+                terminalController?.refreshTabSidebar()
+            }
             tabBarDidAppear()
         }
     }
@@ -393,6 +399,11 @@ class TerminalWindow: NSWindow {
             tab.attributedTitle = attributedTitle
             guard title != oldValue else { return }
 
+            if usesTabSidebar {
+                for member in tabbedWindows ?? [self] {
+                    (member.windowController as? TerminalController)?.refreshTabSidebar()
+                }
+            }
             syncWindowTitleAppearance()
         }
     }

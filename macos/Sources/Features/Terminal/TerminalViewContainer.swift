@@ -5,6 +5,8 @@ import SwiftUI
 /// Modifying `NSThemeFrame` can sometimes be unpredictable.
 class TerminalViewContainer: NSView {
     private let terminalView: NSView
+    private lazy var terminalLeading = terminalView.leadingAnchor.constraint(equalTo: leadingAnchor)
+    private var sidebarWidth: CGFloat = 0
 
     /// Background color applied with glass effect
     private(set) var glassEffectView: NSView?
@@ -40,14 +42,17 @@ class TerminalViewContainer: NSView {
     var initialContentSize: NSSize?
 
     override var intrinsicContentSize: NSSize {
-        let hostingSize = terminalView.intrinsicContentSize
+        var hostingSize = terminalView.intrinsicContentSize
         // The hosting view returns a valid size once SwiftUI has laid out
         // with the correct idealWidth/idealHeight. Before that (when
         // @FocusedValue hasn't propagated), it returns a tiny default.
         // Fall back to initialContentSize in that case.
         if let initialContentSize,
            hostingSize.width < initialContentSize.width || hostingSize.height < initialContentSize.height {
-            return initialContentSize
+            hostingSize = initialContentSize
+        }
+        if hostingSize.width != NSView.noIntrinsicMetric {
+            hostingSize.width += sidebarWidth
         }
         return hostingSize
     }
@@ -57,9 +62,25 @@ class TerminalViewContainer: NSView {
         terminalView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             terminalView.topAnchor.constraint(equalTo: topAnchor),
-            terminalView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            terminalLeading,
             terminalView.bottomAnchor.constraint(equalTo: bottomAnchor),
             terminalView.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+    }
+
+    func installTabSidebar(_ rootView: TerminalTabSidebarView) {
+        let sidebar = NSHostingView(rootView: rootView)
+        addSubview(sidebar)
+        sidebar.translatesAutoresizingMaskIntoConstraints = false
+        terminalLeading.isActive = false
+        sidebarWidth = 216
+        invalidateIntrinsicContentSize()
+        NSLayoutConstraint.activate([
+            sidebar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            sidebar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            sidebar.bottomAnchor.constraint(equalTo: bottomAnchor),
+            sidebar.widthAnchor.constraint(equalToConstant: sidebarWidth),
+            terminalView.leadingAnchor.constraint(equalTo: sidebar.trailingAnchor),
         ])
     }
 

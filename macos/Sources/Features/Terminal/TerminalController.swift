@@ -592,7 +592,12 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     /// shortcut that activates it (if any). This is called when the key window
     /// changes, when a window is closed, and when tabs are reordered
     /// with the mouse.
+    private let tabSidebar = TerminalTabSidebar()
+
+    func refreshTabSidebar() { tabSidebar.scheduleRefresh() }
+
     func relabelTabs() {
+        refreshTabSidebar()
         // We only listen for frame changes if we have more than 1 window,
         // otherwise the accessory view doesn't matter.
         tabListenForFrame = window?.tabbedWindows?.count ?? 0 > 1
@@ -1123,6 +1128,20 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         // SwiftUI focus chain.
         container.initialContentSize = focusedSurface?.initialSize
 
+        if let terminalWindow = window as? TerminalWindow, terminalWindow.usesTabSidebar {
+            tabSidebar.window = window
+            tabSidebar.refresh()
+            container.installTabSidebar(TerminalTabSidebarView(
+                sidebar: tabSidebar,
+                newTab: { [weak self] in self?.newTab(nil) },
+                closeTab: { [weak self] tab in
+                    guard let target = self?.tabSidebar.windows.first(where: { ObjectIdentifier($0) == tab.id }),
+                          let controller = target.windowController as? TerminalController else { return }
+                    target.makeKeyAndOrderFront(nil)
+                    controller.closeTab(nil)
+                }
+            ))
+        }
         window.contentView = container
 
         // If we have a default size, we want to apply it.
