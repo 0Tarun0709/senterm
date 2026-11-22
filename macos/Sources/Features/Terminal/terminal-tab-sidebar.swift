@@ -9,8 +9,20 @@ final class TerminalTabSidebar: ObservableObject {
         let selected: Bool
     }
 
-    @Published private(set) var tabs: [Tab] = []
+    struct Section: Identifiable, Equatable {
+        let directory: String?
+        var id: String? { directory }
+        var title: String {
+            directory.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "terminals"
+        }
+        var tabs: [Tab] = []
+    }
+
+    @Published private(set) var sections: [Section] = []
+    @Published var collapsedSections: Set<String?> = []
+    @Published var isCollapsed = false
     weak var window: NSWindow?
+    var directoryForWindow: (NSWindow) -> String? = { _ in nil }
     private weak var group: NSWindowTabGroup?
     private var windowsObservation: NSKeyValueObservation?
     private var refreshScheduled = false
@@ -39,10 +51,18 @@ final class TerminalTabSidebar: ObservableObject {
                 DispatchQueue.main.async { self?.scheduleRefresh() }
             }
         }
-        let next = windows.map {
-            Tab(id: ObjectIdentifier($0), title: $0.title.isEmpty ? "terminal" : $0.title, selected: $0 === window)
+        var next: [Section] = []
+        for member in windows {
+            let directory = directoryForWindow(member)
+            let tab = Tab(id: ObjectIdentifier(member), title: member.title.isEmpty ? "terminal" : member.title,
+                          selected: member === window)
+            if let index = next.firstIndex(where: { $0.directory == directory }) {
+                next[index].tabs.append(tab)
+            } else {
+                next.append(Section(directory: directory, tabs: [tab]))
+            }
         }
-        if next != tabs { tabs = next }
+        if next != sections { sections = next }
     }
 
     func select(_ tab: Tab) {
@@ -53,53 +73,34 @@ final class TerminalTabSidebar: ObservableObject {
 
 struct TerminalTabSidebarView: View {
     @ObservedObject var sidebar: TerminalTabSidebar
-    let newTab: () -> Void
+    let newTab: (String?) -> Void
+    let newSection: () -> Void
+    let toggleSection: (String?) -> Void
+    let toggleSidebar: () -> Void
     let closeTab: (TerminalTabSidebar.Tab) -> Void
+    let openGitChanges: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("tabs")
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 12, weight: .medium))
-                Spacer()
-                Button(action: newTab) {
-                    Image(systemName: "plus").frame(width: 24, height: 24)
+                action("sidebar.left", sidebar.isCollapsed ? "show sidebar" : "hide sidebar", toggleSidebar)
+                if !sidebar.isCollapsed {
+                    Spacer()
+                    action("folder.badge.plus", "new project section", newSection)
                 }
-                .buttonStyle(.plain)
-                .help("new tab")
-                .accessibilityLabel("new tab")
             }
-            .padding(.horizontal, 8)
-            ScrollView {
-                LazyVStack(spacing: 2) {
-                    ForEach(sidebar.tabs) { tab in
-                        Button {
-                            sidebar.select(tab)
-                        } label: {
-                            HStack(spacing: 7) {
-                                Image(systemName: "terminal")
-                                Text(verbatim: tab.title).lineLimit(1).truncationMode(.tail)
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, 8)
-                            .frame(height: 28)
-                            .contentShape(Rectangle())
-                            .background {
-                                if tab.selected {
-                                    Capsule().fill(Color.accentColor.opacity(0.22))
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .help(tab.title)
-                        .accessibilityAddTraits(tab.selected ? .isSelected : [])
-                        .contextMenu {
-                            Button("close tab") { closeTab(tab) }
+            if sidebar.isCollapsed {
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(sidebar.sections) { section in
+                            sectionView(section)
                         }
                     }
                 }
             }
+            action("arrow.triangle.branch", "git changes", openGitChanges)
         }
         .padding(8)
         .font(.system(size: 13))
@@ -107,6 +108,62 @@ struct TerminalTabSidebarView: View {
         .background(.bar)
         .overlay(alignment: .trailing) {
             Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 1).allowsHitTesting(false)
+        }
+    }
+
+    private func action(_ icon: String, _ title: String, _ handler: @escaping () -> Void) -> some View {
+        Button(action: handler) {
+            Image(systemName: icon).frame(width: 24, height: 24).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(title)
+        .accessibilityLabel(title)
+    }
+
+    private func sectionView(_ section: TerminalTabSidebar.Section) -> some View {
+        let collapsed = sidebar.collapsedSections.contains(section.directory)
+        return VStack(spacing: 2) {
+            HStack(spacing: 2) {
+                Button {
+                    toggleSection(section.directory)
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: collapsed ? "chevron.right" : "chevron.down").font(.system(size: 9))
+                        Text(verbatim: section.title).lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(height: 24)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(section.directory ?? section.title)
+                action("plus", "new terminal in \(section.title)") { newTab(section.directory) }
+            }
+            .foregroundStyle(.secondary)
+            .font(.system(size: 12, weight: .medium))
+            if !collapsed {
+                ForEach(section.tabs) { tab in
+                    Button {
+                        sidebar.select(tab)
+                    } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: "terminal")
+                            Text(verbatim: tab.title).lineLimit(1)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 8)
+                        .frame(height: 28)
+                        .contentShape(Rectangle())
+                        .background {
+                            if tab.selected { Capsule().fill(Color.accentColor.opacity(0.22)) }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help(tab.title)
+                    .accessibilityAddTraits(tab.selected ? .isSelected : [])
+                    .contextMenu { Button("close tab") { closeTab(tab) } }
+                }
+            }
         }
     }
 }

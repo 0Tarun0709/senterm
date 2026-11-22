@@ -6,7 +6,8 @@ import SwiftUI
 class TerminalViewContainer: NSView {
     private let terminalView: NSView
     private lazy var terminalLeading = terminalView.leadingAnchor.constraint(equalTo: leadingAnchor)
-    private var sidebarWidth: CGFloat = 0
+    private var sidebarWidthConstraint: NSLayoutConstraint?
+    private var sidebarWidth: CGFloat { sidebarWidthConstraint?.constant ?? 0 }
 
     /// Background color applied with glass effect
     private(set) var glassEffectView: NSView?
@@ -73,15 +74,21 @@ class TerminalViewContainer: NSView {
         addSubview(sidebar)
         sidebar.translatesAutoresizingMaskIntoConstraints = false
         terminalLeading.isActive = false
-        sidebarWidth = 216
+        let width = sidebar.widthAnchor.constraint(equalToConstant: 216)
+        sidebarWidthConstraint = width
         invalidateIntrinsicContentSize()
         NSLayoutConstraint.activate([
             sidebar.leadingAnchor.constraint(equalTo: leadingAnchor),
             sidebar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             sidebar.bottomAnchor.constraint(equalTo: bottomAnchor),
-            sidebar.widthAnchor.constraint(equalToConstant: sidebarWidth),
+            width,
             terminalView.leadingAnchor.constraint(equalTo: sidebar.trailingAnchor),
         ])
+    }
+
+    func setSidebarCollapsed(_ collapsed: Bool) {
+        sidebarWidthConstraint?.constant = collapsed ? 40 : 216
+        invalidateIntrinsicContentSize()
     }
 
     override func viewDidMoveToWindow() {
