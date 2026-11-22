@@ -167,6 +167,11 @@
                                     <action selector="newTab:" target="-1" id="KoW-K7-hw5"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="git changes…" id="git-rv-men">
+                                <connections>
+                                    <action selector="openGitReview:" target="-1" id="git-rv-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="m54-Is-iLE"/>
                             <menuItem title="Split Right" id="VUR-Ld-nLx">
                                 <modifierMask key="keyEquivalentModifierMask"/>

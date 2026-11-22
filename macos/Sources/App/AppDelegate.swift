@@ -1020,6 +1020,17 @@ class AppDelegate: NSObject,
         )
     }
 
+    private var activeReviewDirectory: String? {
+        let controller = NSApp.keyWindow?.windowController as? BaseTerminalController
+        guard let directory = controller?.focusedSurface?.pwd, directory.hasPrefix("/") else { return nil }
+        return directory
+    }
+
+    @IBAction func openGitReview(_ sender: Any?) {
+        guard let directory = activeReviewDirectory else { return }
+        GitReviewWindow.open(directory: directory)
+    }
+
     @IBAction func closeAllWindows(_ sender: Any?) {
         TerminalController.closeAllWindows()
         AboutController.shared.hide()
@@ -1332,6 +1343,9 @@ extension AppDelegate {
 extension AppDelegate: NSMenuItemValidation {
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
+        case #selector(openGitReview(_:)):
+            return activeReviewDirectory != nil
+
         case #selector(setAsDefaultTerminal(_:)):
             return NSWorkspace.shared.defaultTerminal != Bundle.main.bundleURL
 
