@@ -106,6 +106,17 @@ pub fn init(b: *std.Build, cfg: *const Config, deps: *const SharedDeps) !Ghostty
         try steps.append(b.allocator, &install_step.step);
     }
 
+    // Ship the macOS fork's own themes even without the upstream theme pack.
+    if (cfg.target.result.os.tag == .macos) {
+        inline for (.{ "senterm-original", "abyssal-trench" }) |name| {
+            const install_step = b.addInstallFile(
+                b.path("macos/" ++ name),
+                "share/ghostty/themes/" ++ name,
+            );
+            try steps.append(b.allocator, &install_step.step);
+        }
+    }
+
     // Themes
     if (cfg.emit_themes) {
         if (b.lazyDependency("iterm2_themes", .{})) |upstream| {

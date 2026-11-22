@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src data:; img-src data:; worker-src blob:">
+  <title>git changes</title>
+  <link rel="stylesheet" href="editor.css">
+  <link rel="stylesheet" href="review.css">
+  <script defer src="editor.js"></script>
+</head>
+<body>
+  <aside class="activity" aria-label="source control"><i class="codicon codicon-source-control"></i><span id="activity-count" hidden></span></aside>
+  <aside class="sidebar" aria-label="changed files">
+    <header>source control <button id="refresh" title="refresh changes" aria-label="refresh changes"><i class="codicon codicon-refresh"></i></button></header>
+    <nav aria-label="diff scope">
+      <button data-scope="unstaged" aria-pressed="true">changes</button>
+      <button data-scope="staged" aria-pressed="false">staged changes</button>
+    </nav>
+    <div class="group"><i class="codicon codicon-chevron-down"></i><span id="group-title">changes</span><span id="count"></span></div>
+    <div id="files"></div>
+  </aside>
+  <main>
+    <header class="tabs"><div id="tab" class="tab" hidden><i class="codicon codicon-file-code"></i><span id="tab-title"></span><span id="tab-status"></span></div>
+      <div class="actions">
+        <button id="previous" title="previous change" aria-label="previous change" disabled><i class="codicon codicon-arrow-up"></i></button>
+        <button id="next" title="next change" aria-label="next change" disabled><i class="codicon codicon-arrow-down"></i></button>
+      </div>
+    </header>
+    <div id="breadcrumb" hidden><i class="codicon codicon-file-code"></i><span></span></div>
+    <div id="editor" aria-label="side-by-side git diff"></div>
+    <div id="message" role="status">reading git changes…</div>
+  </main>
+  <footer><i class="codicon codicon-git-branch"></i><span id="branch"></span><span id="stats"></span><span id="language"></span></footer>
+</body>
+</html>

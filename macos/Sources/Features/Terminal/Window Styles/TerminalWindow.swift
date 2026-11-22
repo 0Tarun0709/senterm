@@ -252,6 +252,58 @@ class TerminalWindow: NSWindow {
         }
     }
 
+    var usesTabSidebar: Bool { !(self is HiddenTitlebarTerminalWindow) }
+
+    func installSidebarActions(
+        sidebar: TerminalTabSidebar,
+        toggleSidebar: @escaping () -> Void,
+        newSection: @escaping () -> Void
+    ) {
+        let actions = SidebarTitlebarActions(sidebar: sidebar, toggleSidebar: toggleSidebar, newSection: newSection)
+        let host = NonDraggableHostingView(rootView: actions)
+
+        if styleMask.contains(.titled) {
+            titleVisibility = .hidden
+            titlebarAppearsTransparent = true
+            titlebarSeparatorStyle = .none
+            let accessory = NSTitlebarAccessoryViewController()
+            accessory.layoutAttribute = .left
+            accessory.view = host
+            host.frame.size = host.fittingSize
+            addTitlebarAccessoryViewController(accessory)
+        } else if let contentView {
+            contentView.addSubview(host)
+            host.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                host.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+                host.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+            ])
+        }
+    }
+
+    private struct SidebarTitlebarActions: View {
+        @ObservedObject var sidebar: TerminalTabSidebar
+        let toggleSidebar: () -> Void
+        let newSection: () -> Void
+
+        var body: some View {
+            HStack(spacing: 2) {
+                button("sidebar.left", sidebar.isCollapsed ? "show sidebar" : "hide sidebar", toggleSidebar)
+                button("folder.badge.plus", "new project section", newSection)
+            }
+            .fixedSize()
+        }
+
+        private func button(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
+            Button(action: action) {
+                Image(systemName: icon).frame(width: 28, height: 24).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(title)
+            .accessibilityLabel(title)
+        }
+    }
+
     override func addTitlebarAccessoryViewController(_ childViewController: NSTitlebarAccessoryViewController) {
         super.addTitlebarAccessoryViewController(childViewController)
 
@@ -260,6 +312,10 @@ class TerminalWindow: NSWindow {
         // it. This has been verified to work on macOS 12 to 26
         if isTabBar(childViewController) {
             childViewController.identifier = Self.tabBarIdentifier
+            if usesTabSidebar {
+                childViewController.isHidden = true
+                terminalController?.refreshTabSidebar()
+            }
             tabBarDidAppear()
         }
     }
@@ -393,6 +449,11 @@ class TerminalWindow: NSWindow {
             tab.attributedTitle = attributedTitle
             guard title != oldValue else { return }
 
+            if usesTabSidebar {
+                for member in tabbedWindows ?? [self] {
+                    (member.windowController as? TerminalController)?.refreshTabSidebar()
+                }
+            }
             syncWindowTitleAppearance()
         }
     }

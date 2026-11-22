@@ -64,8 +64,10 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     init(_ ghostty: Ghostty.App,
          withBaseConfig base: Ghostty.SurfaceConfiguration? = nil,
          withSurfaceTree tree: SplitTree<Ghostty.SurfaceView>? = nil,
-         parent: NSWindow? = nil
+         parent: NSWindow? = nil,
+         sidebarDirectory: String? = nil
     ) {
+        self.sidebarDirectory = sidebarDirectory
         // The window we manage is not restorable if we've specified a command
         // to execute. We do this because the restored window is meaningless at the
         // time of writing this: it'd just restore to a shell in the same directory
@@ -419,7 +421,8 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     static func newTab(
         _ ghostty: Ghostty.App,
         from parent: NSWindow? = nil,
-        withBaseConfig baseConfig: Ghostty.SurfaceConfiguration? = nil
+        withBaseConfig baseConfig: Ghostty.SurfaceConfiguration? = nil,
+        sidebarDirectory: String? = nil
     ) -> TerminalController? {
         // Making sure that we're dealing with a TerminalController. If not,
         // then we just create a new window.
@@ -442,7 +445,12 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         }
 
         // Create a new window and add it to the parent
-        let controller = TerminalController.init(ghostty, withBaseConfig: baseConfig)
+        let controller = TerminalController(
+            ghostty, withBaseConfig: baseConfig,
+            sidebarDirectory: sidebarDirectory ?? parentController.sidebarDirectory
+        )
+        controller.tabSidebar.isCollapsed = parentController.tabSidebar.isCollapsed
+        controller.tabSidebar.collapsedSections = parentController.tabSidebar.collapsedSections
         controller.isBackgroundOpaque = parentController.isBackgroundOpaque
         guard let window = controller.window else { return controller }
 
@@ -592,7 +600,73 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     /// shortcut that activates it (if any). This is called when the key window
     /// changes, when a window is closed, and when tabs are reordered
     /// with the mouse.
+    private let tabSidebar = TerminalTabSidebar()
+    private let sidebarDirectory: String?
+
+    func refreshTabSidebar() { tabSidebar.scheduleRefresh() }
+
+    private var workspaceControllers: [TerminalController] {
+        tabSidebar.windows.compactMap { $0.windowController as? TerminalController }
+    }
+
+    private func toggleTabSidebar() {
+        let collapsed = !tabSidebar.isCollapsed
+        for controller in workspaceControllers {
+            controller.tabSidebar.isCollapsed = collapsed
+            controller.terminalViewContainer?.setSidebarCollapsed(collapsed)
+        }
+    }
+
+    private func setSectionCollapsed(_ directory: String?, collapsed: Bool) {
+        for controller in workspaceControllers {
+            if collapsed {
+                controller.tabSidebar.collapsedSections.insert(directory)
+            } else {
+                controller.tabSidebar.collapsedSections.remove(directory)
+            }
+        }
+    }
+
+    private func addSidebarTerminal(in directory: String?) {
+        guard let window else { return }
+        // Use an ungrouped parent when adding to the default section from a project tab.
+        let parent = directory == nil ? workspaceControllers.first { $0.sidebarDirectory == nil }?.window : window
+        guard let parent else { return }
+        var config = Ghostty.SurfaceConfiguration()
+        config.workingDirectory = directory
+        setSectionCollapsed(directory, collapsed: false)
+        _ = Self.newTab(ghostty, from: parent, withBaseConfig: config, sidebarDirectory: directory)
+    }
+
+    private func addSidebarSection() {
+        guard let window else { return }
+        let panel = NSOpenPanel()
+        panel.title = "new project section"
+        panel.prompt = "open"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.beginSheetModal(for: window) { [weak self] result in
+            guard let self, result == .OK, let url = panel.url else { return }
+            let directory = url.standardizedFileURL.resolvingSymlinksInPath().path
+            if let existing = workspaceControllers.first(where: { $0.sidebarDirectory == directory }) {
+                setSectionCollapsed(directory, collapsed: false)
+                existing.window?.makeKeyAndOrderFront(nil)
+            } else {
+                addSidebarTerminal(in: directory)
+            }
+        }
+    }
+
+    private func openSidebarGitChanges() {
+        guard let directory = focusedSurface?.pwd ?? sidebarDirectory, directory.hasPrefix("/") else {
+            NSSound.beep()
+            return
+        }
+        GitReviewWindow.open(directory: directory)
+    }
+
     func relabelTabs() {
+        refreshTabSidebar()
         // We only listen for frame changes if we have more than 1 window,
         // otherwise the accessory view doesn't matter.
         tabListenForFrame = window?.tabbedWindows?.count ?? 0 > 1
@@ -1123,7 +1197,36 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         // SwiftUI focus chain.
         container.initialContentSize = focusedSurface?.initialSize
 
+        if let terminalWindow = window as? TerminalWindow, terminalWindow.usesTabSidebar {
+            tabSidebar.window = window
+            tabSidebar.directoryForWindow = { ($0.windowController as? TerminalController)?.sidebarDirectory }
+            tabSidebar.refresh()
+            container.installTabSidebar(TerminalTabSidebarView(
+                sidebar: tabSidebar,
+                ghostty: ghostty,
+                newTab: { [weak self] in self?.addSidebarTerminal(in: $0) },
+                toggleSection: { [weak self] directory in
+                    guard let self else { return }
+                    setSectionCollapsed(directory, collapsed: !tabSidebar.collapsedSections.contains(directory))
+                },
+                closeTab: { [weak self] tab in
+                    guard let target = self?.tabSidebar.windows.first(where: { ObjectIdentifier($0) == tab.id }),
+                          let controller = target.windowController as? TerminalController else { return }
+                    target.makeKeyAndOrderFront(nil)
+                    controller.closeTab(nil)
+                },
+                openGitChanges: { [weak self] in self?.openSidebarGitChanges() }
+            ))
+            container.setSidebarCollapsed(tabSidebar.isCollapsed)
+        }
         window.contentView = container
+        if let terminalWindow = window as? TerminalWindow, terminalWindow.usesTabSidebar {
+            terminalWindow.installSidebarActions(
+                sidebar: tabSidebar,
+                toggleSidebar: { [weak self] in self?.toggleTabSidebar() },
+                newSection: { [weak self] in self?.addSidebarSection() }
+            )
+        }
 
         // If we have a default size, we want to apply it.
         if let defaultSize {

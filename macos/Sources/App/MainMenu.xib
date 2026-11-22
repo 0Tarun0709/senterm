@@ -18,7 +18,6 @@
                 <outlet property="menuBringAllToFront" destination="LE2-aR-0XJ" id="AP9-oK-60V"/>
                 <outlet property="menuChangeTabTitle" destination="iac-lh-Cl7" id="tId-v0-a3E"/>
                 <outlet property="menuChangeTitle" destination="24I-xg-qIq" id="kg6-kT-jNL"/>
-                <outlet property="menuCheckForUpdates" destination="GEA-5y-yzH" id="0nV-Tf-nJQ"/>
                 <outlet property="menuClose" destination="DVo-aG-piG" id="R3t-0C-aSU"/>
                 <outlet property="menuCloseAllWindows" destination="yKr-Vi-Yqw" id="Zet-Ir-zbm"/>
                 <outlet property="menuCloseTab" destination="Obb-Mk-j8J" id="Gda-L0-gdz"/>
@@ -77,20 +76,14 @@
         <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
         <menu title="Main Menu" systemMenu="main" id="AYu-sK-qS6">
             <items>
-                <menuItem title="Ghostty" id="1Xt-HY-uBw">
+                <menuItem title="senterm" id="1Xt-HY-uBw">
                     <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="Ghostty" systemMenu="apple" id="uQy-DD-JDr">
+                    <menu key="submenu" title="senterm" systemMenu="apple" id="uQy-DD-JDr">
                         <items>
-                            <menuItem title="About Ghostty" id="5kV-Vb-QxS">
+                            <menuItem title="About senterm" id="5kV-Vb-QxS">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="showAbout:" target="-1" id="tGt-68-tLn"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Check for Updates..." id="GEA-5y-yzH">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="checkForUpdates:" target="bbz-4X-AYv" id="z2n-lC-48f"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
@@ -100,6 +93,12 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="GOd-qX-exa"/>
+                            <menuItem title="themes…" id="the-me-pkr">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="openThemes:" target="bbz-4X-AYv" id="the-me-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem title="Reload Configuration" id="KKH-XX-5py">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
@@ -112,7 +111,7 @@
                                     <action selector="toggleSecureInput:" target="bbz-4X-AYv" id="vWx-z8-5Sy"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Make Ghostty the Default Terminal" id="b1t-oB-7MI" userLabel="Set Ghostty as Default Terminal App">
+                            <menuItem title="Make senterm the Default Terminal" id="b1t-oB-7MI" userLabel="Set Ghostty as Default Terminal App">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="setAsDefaultTerminal:" target="bbz-4X-AYv" id="QHh-CA-Qho"/>
@@ -124,7 +123,7 @@
                                 <menu key="submenu" title="Services" id="aQe-vS-j8Q"/>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="qno-yg-pur"/>
-                            <menuItem title="Hide Ghostty" keyEquivalent="h" id="Olw-nP-bQN">
+                            <menuItem title="Hide senterm" keyEquivalent="h" id="Olw-nP-bQN">
                                 <connections>
                                     <action selector="hide:" target="-1" id="PnN-Uc-m68"/>
                                 </connections>
@@ -142,7 +141,7 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="kCx-OE-vgT"/>
-                            <menuItem title="Quit Ghostty" id="4sb-4s-VLi">
+                            <menuItem title="Quit senterm" id="4sb-4s-VLi">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="terminate:" target="-1" id="Te7-pn-YzF"/>
@@ -165,6 +164,11 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="newTab:" target="-1" id="KoW-K7-hw5"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="git changes…" id="git-rv-men">
+                                <connections>
+                                    <action selector="openGitReview:" target="-1" id="git-rv-act"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="m54-Is-iLE"/>

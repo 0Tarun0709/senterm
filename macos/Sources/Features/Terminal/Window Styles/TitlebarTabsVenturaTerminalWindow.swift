@@ -176,7 +176,7 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
 
         // We can only update titlebar tabs if there is a titlebar. Without the
         // styleMask check the app will crash (issue #1876)
-        if titlebarTabs && styleMask.contains(.titled) {
+        if !usesTabSidebar && titlebarTabs && styleMask.contains(.titled) {
             guard let tabBarAccessoryViewController = titlebarAccessoryViewControllers.first(where: { $0.identifier == Self.tabBarIdentifier}) else { return }
             tabBarAccessoryViewController.layoutAttribute = .right
             pushTabsToTitlebar(tabBarAccessoryViewController)
@@ -310,7 +310,7 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
     // This is called by macOS for native tabbing in order to add the tab bar. We hook into
     // this, detect the tab bar being added, and override its behavior.
     override func addTitlebarAccessoryViewController(_ childViewController: NSTitlebarAccessoryViewController) {
-        let isTabBar = self.titlebarTabs && isTabBar(childViewController)
+        let isTabBar = !usesTabSidebar && self.titlebarTabs && isTabBar(childViewController)
 
         if isTabBar {
             // Ensure it has the right layoutAttribute to force it next to our titlebar
