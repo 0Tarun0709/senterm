@@ -47,7 +47,6 @@ private final class ReviewPage: NSViewController, WKScriptMessageHandler, WKNavi
         let revision: String?
         let additions: Int?
         let deletions: Int?
-
     }
 
     private struct Response: Encodable {
@@ -79,7 +78,7 @@ private final class ReviewPage: NSViewController, WKScriptMessageHandler, WKNavi
         webView.navigationDelegate = self
         view = webView
         self.webView = webView
-        webView.loadFileURL(assets.appendingPathComponent("index.html"), allowingReadAccessTo: assets)
+        webView.loadFileURL(pageURL, allowingReadAccessTo: pageURL.deletingLastPathComponent())
     }
 
     func disconnect() {
@@ -88,14 +87,48 @@ private final class ReviewPage: NSViewController, WKScriptMessageHandler, WKNavi
         webView?.stopLoading()
     }
 
+    private var pageURL: URL {
+        assets.appendingPathComponent("index.html").standardizedFileURL.resolvingSymlinksInPath()
+    }
+
+    private func isReviewPage(_ url: URL?) -> Bool {
+        guard let url, url.isFileURL, url.host == nil || url.host == "" || url.host == "localhost" else { return false }
+        // WebKit can return a different representation of the same bundle file URL.
+        return url.standardizedFileURL.resolvingSymlinksInPath().path == pageURL.path
+    }
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
-        guard navigationAction.targetFrame?.isMainFrame == true,
-              navigationAction.request.url == assets.appendingPathComponent("index.html") else { return .cancel }
+        guard navigationAction.targetFrame?.isMainFrame != false,
+              isReviewPage(navigationAction.request.url) else { return .cancel }
         return .allow
     }
 
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        guard (error as NSError).code != NSURLErrorCancelled else { return }
+        showLoadFailure()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        showLoadFailure()
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        showLoadFailure()
+    }
+
+    private func showLoadFailure() {
+        let label = NSTextField(labelWithString: "could not load git changes. close this window and try again.")
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+        ])
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.frameInfo.isMainFrame, message.frameInfo.request.url == assets.appendingPathComponent("index.html"),
+        guard message.frameInfo.isMainFrame, isReviewPage(message.frameInfo.request.url),
               let request = message.body as? [String: Any], let id = request["id"] as? Int,
               let action = request["action"] as? String, action == "list" || action == "file",
               let value = request["scope"] as? String, let scope = GitChanges.Scope(rawValue: value) else { return }
