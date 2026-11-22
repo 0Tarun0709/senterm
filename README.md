@@ -32,7 +32,7 @@ and a git changes viewer to ghostty's native macos terminal.
 ## try the preview
 
 1. open the [macos build workflow](https://github.com/0Tarun0709/senterm/actions/workflows/senterm-dmg.yml)
-   and select a successful run on the `senterm` branch.
+   and select a successful run on the `main` branch.
 2. while signed in to github, download the `senterm-macos-universal` artifact
    and unzip it. the disk image supports intel and apple silicon.
 3. open `senterm-macos-universal.dmg` and drag senterm into applications.
