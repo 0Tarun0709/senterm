@@ -2,10 +2,12 @@
   <img src="macos/Assets.xcassets/senterm.appiconset/icon-128.png" width="128" height="128" alt="SenTerm icon" />
 </p>
 
-# SenTerm
+<p align="center">
+  <a href="#getting-started"><img src="https://img.shields.io/badge/macOS-Intel%20%2B%20Apple%20silicon-333333?logo=apple" alt="macOS: Intel and Apple silicon" /></a>
+  <a href="https://github.com/0Tarun0709/senterm/actions/workflows/senterm-dmg.yml?query=branch%3Amain"><img src="https://github.com/0Tarun0709/senterm/actions/workflows/senterm-dmg.yml/badge.svg?branch=main" alt="macOS build status" /></a>
+</p>
 
-[![macOS: Intel and Apple silicon](https://img.shields.io/badge/macOS-Intel%20%2B%20Apple%20silicon-333333?logo=apple)](#getting-started)
-[![macOS build status](https://github.com/0Tarun0709/senterm/actions/workflows/senterm-dmg.yml/badge.svg?branch=main)](https://github.com/0Tarun0709/senterm/actions/workflows/senterm-dmg.yml?query=branch%3Amain)
+# SenTerm
 
 SenTerm is a project-first macOS terminal built on Ghostty. It groups terminal
 tabs by project folder, so you can run a coding agent in one pane, watch your
