@@ -44,7 +44,12 @@ jobs:
           nu --version
       - name: build universal app
         run: |
-          zig build -Doptimize=ReleaseFast -Demit-macos-app=false -Dxcframework-target=universal
+          set --
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            # SenTerm alpha tags don't match Ghostty's stable release format.
+            set -- "-Dversion-string=${GITHUB_REF_NAME#v}"
+          fi
+          zig build -Doptimize=ReleaseFast -Demit-macos-app=false -Dxcframework-target=universal "$@"
           nu macos/build.nu --configuration ReleaseLocal
       - name: package disk image
         run: |
