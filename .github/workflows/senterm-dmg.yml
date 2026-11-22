@@ -2,15 +2,27 @@ name: senterm macos dmg
 
 on:
   push:
-    branches: [senterm]
+    branches: [main, senterm]
     tags: ['v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+']
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  test:
     if: github.repository == '0Tarun0709/senterm'
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: bash test/senterm-review/run.sh
+
+  build:
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     timeout-minutes: 60
     env:
@@ -48,7 +60,7 @@ jobs:
           retention-days: 14
 
   draft-prerelease:
-    if: github.repository == '0Tarun0709/senterm' && github.ref_type == 'tag'
+    if: github.repository == '0Tarun0709/senterm' && github.event_name == 'push' && github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 5
