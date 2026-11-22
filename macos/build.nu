@@ -11,6 +11,19 @@ def main [
     let project = ($env.FILE_PWD | path join "Ghostty.xcodeproj")
     let build_dir = ($env.FILE_PWD | path join "build")
 
+    if $scheme == "Ghostty" and ($action in ["build" "test" "archive"]) {
+        cd ($env.FILE_PWD | path join "senterm-editor")
+        let lock_hash = (open --raw package-lock.json | hash sha256)
+        let installed_hash = if ("node_modules/.senterm-lock" | path exists) {
+            open --raw node_modules/.senterm-lock
+        } else { "" }
+        if $lock_hash != $installed_hash {
+            ^npm ci --ignore-scripts --no-audit --no-fund
+            $lock_hash | save --force node_modules/.senterm-lock
+        }
+        ^node build.mjs
+    }
+
     # Skip UI tests for CLI-based invocations because it requires
     # special permissions.
     let skip_testing = if $action == "test" {

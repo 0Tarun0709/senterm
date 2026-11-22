@@ -1,15 +1,27 @@
 import AppKit
-import SwiftUI
+import WebKit
 
 @MainActor
 final class GitReviewWindow: NSWindowController, NSWindowDelegate {
     private static var openWindows: Set<GitReviewWindow> = []
 
-    static func open(directory: String) {
-        let window = NSWindow(contentViewController: NSHostingController(rootView: GitReviewView(directory: directory)))
+    static func open(directory: String, assets: URL? = Bundle.main.resourceURL?.appendingPathComponent("dist")) {
+        guard let assets, FileManager.default.fileExists(atPath: assets.appendingPathComponent("index.html").path) else {
+            let alert = NSAlert()
+            alert.messageText = "git review resources are missing"
+            alert.informativeText = "rebuild the app with macos/build.nu."
+            alert.runModal()
+            return
+        }
+
+        let review = ReviewPage(directory: directory, assets: assets)
+        let window = NSWindow(contentViewController: review)
         window.title = "git changes"
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.backgroundColor = NSColor(srgbRed: 25 / 255, green: 26 / 255, blue: 27 / 255, alpha: 1)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.setContentSize(NSSize(width: 720, height: 480))
+        window.setContentSize(NSSize(width: 1280, height: 790))
+        window.contentMinSize = NSSize(width: 640, height: 360)
         window.center()
         let controller = GitReviewWindow(window: window)
         window.delegate = controller
@@ -18,42 +30,105 @@ final class GitReviewWindow: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        (window?.contentViewController as? ReviewPage)?.disconnect()
         Self.openWindows.remove(self)
     }
 }
 
-private struct GitReviewView: View {
-    let directory: String
-    @State private var files: GitChanges.Files?
-    @State private var failure: String?
+@MainActor
+private final class ReviewPage: NSViewController, WKScriptMessageHandler, WKNavigationDelegate {
+    private struct File: Encodable {
+        let path: String
+        let status: String
+    }
 
-    var body: some View {
-        Group {
-            if let files {
-                if files.paths.isEmpty {
-                    Text("no unstaged changes")
-                } else {
-                    List(files.paths, id: \.self) { path in
-                        Text(verbatim: path)
-                    }
-                    .accessibilityLabel("unstaged changes")
-                }
-            } else if let failure {
-                Text(verbatim: failure)
-                    .padding()
-            } else {
-                ProgressView("reading git changes…")
+    private struct Listing: Encodable {
+        let files: [File]
+        let revision: String?
+        let additions: Int?
+        let deletions: Int?
+
+    }
+
+    private struct Response: Encodable {
+        let id: Int
+        var list: Listing?
+        var comparison: GitChanges.Comparison?
+        var error: String?
+    }
+
+    private let directory: String
+    private let assets: URL
+    private var work: Task<Void, Never>?
+    private var webView: WKWebView?
+
+    init(directory: String, assets: URL) {
+        self.directory = directory
+        self.assets = assets
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = .nonPersistent()
+        config.userContentController.add(self, name: "review")
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.underPageBackgroundColor = NSColor(srgbRed: 25 / 255, green: 26 / 255, blue: 27 / 255, alpha: 1)
+        webView.navigationDelegate = self
+        view = webView
+        self.webView = webView
+        webView.loadFileURL(assets.appendingPathComponent("index.html"), allowingReadAccessTo: assets)
+    }
+
+    func disconnect() {
+        work?.cancel()
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "review")
+        webView?.stopLoading()
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        guard navigationAction.targetFrame?.isMainFrame == true,
+              navigationAction.request.url == assets.appendingPathComponent("index.html") else { return .cancel }
+        return .allow
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.frameInfo.isMainFrame, message.frameInfo.request.url == assets.appendingPathComponent("index.html"),
+              let request = message.body as? [String: Any], let id = request["id"] as? Int,
+              let action = request["action"] as? String, action == "list" || action == "file",
+              let value = request["scope"] as? String, let scope = GitChanges.Scope(rawValue: value) else { return }
+        let path = request["path"] as? String
+        let directory = self.directory
+        work?.cancel()
+        work = Task { [weak self] in
+            let job = Task.detached(priority: .userInitiated) {
+                Self.response(directory: directory, scope: scope, action: action, path: path, id: id)
             }
+            let response = await withTaskCancellationHandler { await job.value } onCancel: { job.cancel() }
+            guard !Task.isCancelled, let self, let webView,
+                  let encoded = try? JSONEncoder().encode(response),
+                  let data = try? JSONSerialization.jsonObject(with: encoded) else { return }
+            _ = try? await webView.callAsyncJavaScript("window.renderReview(response)", arguments: ["response": data], in: nil, contentWorld: .page)
         }
-        .frame(minWidth: 360, minHeight: 240)
-        .task {
-            do {
-                files = try await Task.detached(priority: .userInitiated) {
-                    try GitChanges.files(in: directory, scope: .unstaged)
-                }.value
-            } catch {
-                failure = error.localizedDescription
+    }
+
+    nonisolated private static func response(
+        directory: String, scope: GitChanges.Scope, action: String, path: String?, id: Int
+    ) -> Response {
+        do {
+            let files = try GitChanges.files(in: directory, scope: scope)
+            try Task.checkCancellation()
+            if action == "file", let path {
+                return Response(id: id, comparison: try GitChanges.comparison(in: files, path: path, scope: scope))
             }
+            let totals = try? GitChanges.totals(in: files, scope: scope)
+            let list = Listing(files: files.paths.map { File(path: $0, status: files.status[$0] ?? "") },
+                               revision: files.revision, additions: totals?.additions, deletions: totals?.deletions)
+            return Response(id: id, list: list)
+        } catch {
+            return Response(id: id, error: error.localizedDescription)
         }
     }
 }

@@ -104,6 +104,56 @@ struct GitChanges {
         return totals
     }
 
+    struct Comparison: Encodable {
+        let original: String
+        let modified: String
+    }
+
+    static func comparison(in files: Files, path: String, scope: Scope) throws -> Comparison {
+        guard let status = files.status[path] else {
+            throw Failure(message: "this file is no longer in the change list. refresh and try again.")
+        }
+        let original: Data
+        if status == "?" || status == "A" {
+            original = Data()
+        } else {
+            let revision = scope == .staged ? "HEAD:" : ":0:"
+            original = try git(["cat-file", "blob", revision + path], in: files.root)
+        }
+        let modified: Data
+        if status == "D" {
+            modified = Data()
+        } else if scope == .staged {
+            modified = try git(["cat-file", "blob", ":0:" + path], in: files.root)
+        } else {
+            let root = URL(fileURLWithPath: files.root).resolvingSymlinksInPath()
+            let file = root.appendingPathComponent(path)
+            let parent = file.deletingLastPathComponent().resolvingSymlinksInPath()
+            let safeFile = parent.appendingPathComponent(file.lastPathComponent)
+            let attributes = try FileManager.default.attributesOfItem(atPath: safeFile.path)
+            let type = attributes[.type] as? FileAttributeType
+            guard safeFile.path.hasPrefix(root.path + "/"), type == .typeRegular || type == .typeSymbolicLink else {
+                throw Failure(message: "this file type cannot be previewed.")
+            }
+            if type == .typeSymbolicLink {
+                modified = Data(try FileManager.default.destinationOfSymbolicLink(atPath: safeFile.path).utf8)
+            } else {
+                let handle = try FileHandle(forReadingFrom: safeFile)
+                defer { try? handle.close() }
+                modified = try handle.read(upToCount: previewLimit + 1) ?? Data()
+            }
+        }
+        guard original.count <= previewLimit, modified.count <= previewLimit,
+              !original.contains(0), !modified.contains(0),
+              let before = String(bytes: original, encoding: .utf8),
+              let after = String(bytes: modified, encoding: .utf8) else {
+            throw Failure(message: "binary, non-utf-8, or oversized files cannot be previewed.")
+        }
+        return Comparison(original: before, modified: after)
+    }
+
+    private static let previewLimit = 4_000_000
+
     static func patch(in files: Files, path: String, scope: Scope) throws -> [Row] {
         let args = ["diff", "--patch", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--unified=3",
                     "--output-indicator-new=+", "--output-indicator-old=-", "--output-indicator-context= "]
@@ -191,7 +241,7 @@ struct GitChanges {
         var data = Data()
         while let chunk = try output.fileHandleForReading.read(upToCount: 65_536), !chunk.isEmpty {
             data.append(chunk)
-            if data.count > 4_000_000 {
+            if data.count > previewLimit {
                 if task.isRunning { task.terminate() }
                 throw Failure(message: "this diff is too large to preview. use git diff in the terminal.")
             }
