@@ -1,0 +1,22 @@
+# the original senterm legacy terminal palette
+background = #0d1015
+foreground = #e0e6eb
+cursor-color = #407de8
+selection-background = #00a6b2
+selection-foreground = #000000
+palette = 0=#000000
+palette = 1=#990001
+palette = 2=#00a603
+palette = 3=#999900
+palette = 4=#0300b2
+palette = 5=#b200b2
+palette = 6=#00a5b2
+palette = 7=#bfbfbf
+palette = 8=#8a898a
+palette = 9=#e50001
+palette = 10=#00d800
+palette = 11=#e5e500
+palette = 12=#0700fe
+palette = 13=#e500e5
+palette = 14=#00e5e5
+palette = 15=#e5e5e5

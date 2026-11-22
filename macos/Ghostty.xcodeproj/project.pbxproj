@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		5397817EF8104F7C92F67728 /* senterm-editor in Resources */ = {isa = PBXBuildFile; fileRef = 5275A359789E40F694AD199C /* senterm-editor */; };
+		D0E200000000000000000001 /* senterm-defaults.conf in Resources */ = {isa = PBXBuildFile; fileRef = D0E200000000000000000002 /* senterm-defaults.conf */; };
 		29C15B1D2CDC3B2900520DD4 /* bat in Resources */ = {isa = PBXBuildFile; fileRef = 29C15B1C2CDC3B2000520DD4 /* bat */; };
 		55154BE02B33911F001622DC /* ghostty in Resources */ = {isa = PBXBuildFile; fileRef = 55154BDF2B33911F001622DC /* ghostty */; };
 		552964E62B34A9B400030505 /* vim in Resources */ = {isa = PBXBuildFile; fileRef = 552964E52B34A9B400030505 /* vim */; };
@@ -68,6 +69,7 @@
 
 /* Begin PBXFileReference section */
 		5275A359789E40F694AD199C /* senterm-editor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "senterm-editor"; path = "senterm-editor/dist"; sourceTree = SOURCE_ROOT; };
+		D0E200000000000000000002 /* senterm-defaults.conf */ = {isa = PBXFileReference; lastKnownFileType = text; path = "senterm-defaults.conf"; sourceTree = SOURCE_ROOT; };
 		29C15B1C2CDC3B2000520DD4 /* bat */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bat; path = "../zig-out/share/bat"; sourceTree = "<group>"; };
 		3B39CAA42B33949B00DABEB8 /* GhosttyReleaseLocal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GhosttyReleaseLocal.entitlements; sourceTree = "<group>"; };
 		55154BDF2B33911F001622DC /* ghostty */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ghostty; path = "../zig-out/share/ghostty"; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 			isa = PBXGroup;
 			children = (
 				5275A359789E40F694AD199C /* senterm-editor */,
+				D0E200000000000000000002 /* senterm-defaults.conf */,
 				FC9ABA9B2D0F538D0020D4C8 /* bash-completion */,
 				29C15B1C2CDC3B2000520DD4 /* bat */,
 				A586167B2B7703CC009BDB1D /* fish */,
@@ -403,6 +406,7 @@
 				FC5218FA2D10FFCE004C93E0 /* zsh in Resources */,
 				A5B30539299BEAAB0047F10C /* Assets.xcassets in Resources */,
 				5397817EF8104F7C92F67728 /* senterm-editor in Resources */,
+				D0E200000000000000000001 /* senterm-defaults.conf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

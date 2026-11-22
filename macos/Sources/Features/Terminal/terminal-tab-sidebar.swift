@@ -98,7 +98,9 @@ struct TerminalTabSidebarView: View {
         .padding(8)
         .font(.system(size: 13))
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(.bar)
+        .foregroundStyle(Color(red: 185 / 255, green: 189 / 255, blue: 201 / 255))
+        .background(Color(red: 23 / 255, green: 25 / 255, blue: 30 / 255))
+        .environment(\.colorScheme, .dark)
         .overlay(alignment: .trailing) {
             Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 1).allowsHitTesting(false)
         }
@@ -132,7 +134,6 @@ struct TerminalTabSidebarView: View {
                 .help(section.directory ?? section.title)
                 action("plus", "new terminal in \(section.title)") { newTab(section.directory) }
             }
-            .foregroundStyle(.secondary)
             .font(.system(size: 12, weight: .medium))
             if !collapsed {
                 ForEach(section.tabs, content: tabRow)
@@ -167,7 +168,9 @@ struct TerminalTabSidebarView: View {
         .padding(.trailing, 4)
         .contentShape(Rectangle())
         .background {
-            if tab.selected { Capsule().fill(Color.accentColor.opacity(0.22)) }
+            if tab.selected {
+                Capsule().fill(Color(red: 58 / 255, green: 62 / 255, blue: 71 / 255))
+            }
         }
         .onHover { isInside in
             if isInside {

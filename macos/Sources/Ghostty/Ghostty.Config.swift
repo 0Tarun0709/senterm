@@ -64,6 +64,11 @@ extension Ghostty {
                 return nil
             }
 
+            // Load bundled defaults first so user files and CLI flags can override them.
+            if let defaults = Bundle.main.path(forResource: "senterm-defaults", ofType: "conf") {
+                ghostty_config_load_file(cfg, defaults)
+            }
+
             // Load our configuration from files, CLI args, and then any referenced files.
             if let path {
                 ghostty_config_load_file(cfg, path)
