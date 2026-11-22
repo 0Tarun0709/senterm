@@ -3,7 +3,9 @@ name: senterm macos dmg
 on:
   push:
     branches: [main, senterm]
-    tags: ['v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+']
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+'
   workflow_dispatch:
 
 permissions:
@@ -46,7 +48,7 @@ jobs:
         run: |
           set --
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            # SenTerm alpha tags don't match Ghostty's stable release format.
+            # SenTerm tags use a version independent of Ghostty.
             set -- "-Dversion-string=${GITHUB_REF_NAME#v}"
           fi
           zig build -Doptimize=ReleaseFast -Demit-macos-app=false -Dxcframework-target=universal "$@"
@@ -64,7 +66,7 @@ jobs:
           compression-level: 0
           retention-days: 14
 
-  draft-prerelease:
+  draft-release:
     if: github.repository == '0Tarun0709/senterm' && github.event_name == 'push' && github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
@@ -76,13 +78,17 @@ jobs:
         with:
           name: senterm-macos-universal
           path: dist/
-      - name: draft github prerelease
+      - name: draft github release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           (cd dist && sha256sum -c senterm-macos-universal.dmg.sha256)
-          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --prerelease \
-            --title "senterm $GITHUB_REF_NAME" \
+          set --
+          if [[ "$GITHUB_REF_NAME" == *-alpha.* ]]; then
+            set -- --prerelease
+          fi
+          gh release create "$GITHUB_REF_NAME" --verify-tag --draft "$@" \
+            --title "SenTerm $GITHUB_REF_NAME" \
             --notes 'test build: ad-hoc signed, not notarized. smoke-test before publishing.' \
             dist/senterm-macos-universal.dmg dist/senterm-macos-universal.dmg.sha256
